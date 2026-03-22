@@ -1,35 +1,56 @@
-# FairOrder
+<p align="center">
+  <img src="public/images/logo.png" alt="FairOrder" width="200" />
+</p>
 
-Open-source canteen ordering system. Operators sign up, import menus via OCR, and get a live QR-scannable menu page. Guests scan, order, kitchen prepares.
+**Open-source canteen ordering system — operators sign up, import menus via OCR, and get a live QR-scannable menu page.**
 
-**Self-host in 1 command:**
+Guests scan, order, kitchen prepares. Self-host in one command with Docker Compose.
 
-```bash
-docker compose up
+---
+
+## ✨ Features
+
+### For Operators
+- **Magic Link Auth** — Passwordless login via email, no passwords to manage
+- **OCR Menu Import** — Upload a photo of your menu, get structured data (Tesseract.js, 100% client-side)
+- **3-Step Onboarding** — Location setup, menu import, QR code — live in minutes
+- **Multi-Location** — One account, many locations
+
+### For Guests
+- **QR Code Ordering** — Each location gets a scannable menu page
+- **No App Required** — Works in any mobile browser
+
+### For Kitchens
+- **Kitchen Display** — Wall-mounted screen for real-time order management
+- **Order Workflow** — Simple status progression from received to pickup
+
+### Order Workflow
+```
+┌─────────┐    ┌───────────┐    ┌─────────┐    ┌───────────┐
+│ PENDING │ ─→ │ PREPARING │ ─→ │  READY  │ ─→ │ COMPLETED │
+└─────────┘    └───────────┘    └─────────┘    └───────────┘
+                                      │
+                                      └─→ CANCELLED
 ```
 
-## Features
+---
 
-- **Magic link auth** — passwordless login via email
-- **OCR menu import** — upload a photo of your menu, get structured data (Tesseract.js, 100% client-side)
-- **QR code ordering** — each location gets a scannable menu page
-- **Kitchen display** — wall-mounted screen for order management
-- **Multi-location** — one account, many locations
-- **Self-hostable** — Docker compose, bring your own database and SMTP
+## 🛠 Tech Stack
 
-## Tech Stack
+| Layer | Technology |
+|-------|------------|
+| **Framework** | Next.js 16 (App Router) |
+| **Language** | TypeScript (strict mode) |
+| **Database** | PostgreSQL + Prisma v7 |
+| **Styling** | Tailwind CSS v4, Radix UI, shadcn/ui |
+| **Auth** | Magic link (passwordless, httpOnly cookies) |
+| **OCR** | Tesseract.js (client-side WASM, German) |
+| **Email** | Pluggable: Plunk, SMTP, or Console |
+| **Testing** | Vitest |
 
-| Component | Technology |
-|-----------|-----------|
-| Framework | Next.js 16 (App Router) |
-| Database | PostgreSQL + Prisma v7 |
-| UI | Tailwind CSS v4, Radix UI, shadcn/ui |
-| Auth | Magic link (passwordless, httpOnly cookies) |
-| OCR | Tesseract.js (client-side WASM, German) |
-| Email | Pluggable: Plunk, SMTP, or Console |
-| Testing | Vitest |
+---
 
-## Quick Start
+## 🚀 Getting Started
 
 ### Docker (recommended)
 
@@ -39,9 +60,9 @@ cd fairorder
 docker compose up
 ```
 
-Open http://localhost:3000. Database is migrated and seeded automatically.
+Open [http://localhost:3000](http://localhost:3000). Database is migrated and seeded automatically.
 
-### Manual
+### Manual Setup
 
 ```bash
 git clone https://github.com/RayNCooper/fairorder.git
@@ -54,32 +75,79 @@ pnpm db:seed
 pnpm dev:local
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for full setup details.
+### Available Scripts
 
-## Architecture
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start dev server (dotenvx — maintainers) |
+| `pnpm dev:local` | Start dev server (plain .env — contributors) |
+| `pnpm build` | Production build |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
+| `pnpm test` | Run Vitest test suite |
+
+---
+
+## 📁 Project Structure
 
 ```
-app/
-  (auth)/         # Login, register, verify-email
-  (onboarding)/   # 3-step wizard: setup, menu-import, complete
-  dashboard/      # Operator admin panel
-  api/            # REST API routes
-components/
-  ui/             # shadcn/ui design system (0px radius)
-  auth/           # Magic link forms
-  dashboard/      # Nav, menu manager, order list
-  onboarding/     # Setup form, OCR import, QR display
-lib/
-  auth.ts         # Session management
-  db.ts           # Prisma client
-  email.ts        # Email provider (plunk/smtp/console)
-  magic-link.ts   # Token creation & verification
-prisma/
-  schema.prisma   # Database schema
-  seed.ts         # Demo data
+fairorder/
+├── app/
+│   ├── (auth)/           # Login, register, verify-email
+│   ├── (onboarding)/     # 3-step wizard: setup, menu-import, complete
+│   ├── dashboard/        # Operator admin panel
+│   └── api/              # REST API routes
+├── components/
+│   ├── ui/               # shadcn/ui design system (0px radius)
+│   ├── auth/             # Magic link forms
+│   ├── dashboard/        # Nav, menu manager, order list
+│   └── onboarding/       # Setup form, OCR import, QR display
+├── lib/
+│   ├── auth.ts           # Session management
+│   ├── db.ts             # Prisma client
+│   ├── email.ts          # Email provider (plunk/smtp/console)
+│   └── magic-link.ts     # Token creation & verification
+├── prisma/
+│   ├── schema.prisma     # Database schema
+│   └── seed.ts           # Demo data
+└── public/               # Static assets
 ```
 
-## Email Providers
+---
+
+## 🗄 Database Schema
+
+```
+┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+│     User     │       │   Location   │──────<│   Category   │
+├──────────────┤       ├──────────────┤       ├──────────────┤
+│ id           │──────<│ id           │       │ id           │
+│ email        │       │ name         │       │ name         │
+│ name         │       │ slug         │       │ sortOrder    │
+└──────────────┘       │ timezone     │       │ isActive     │
+       │               │ adminToken   │       └──────────────┘
+       │               │ displayToken │              │
+┌──────────────┐       └──────────────┘       ┌──────────────┐
+│   Session    │              │               │   MenuItem   │
+├──────────────┤              │               ├──────────────┤
+│ id           │              │               │ id           │
+│ token        │              │               │ name         │
+│ expiresAt    │              │               │ price        │
+└──────────────┘              │               │ isAvailable  │
+                              │               └──────────────┘
+                       ┌──────────────┐              │
+                       │    Order     │──────<┌──────────────┐
+                       ├──────────────┤       │  OrderItem   │
+                       │ orderNumber  │       ├──────────────┤
+                       │ customerName │       │ quantity     │
+                       │ status       │       │ unitPrice    │
+                       │ pickupTime   │       │ notes        │
+                       └──────────────┘       └──────────────┘
+```
+
+---
+
+## 📧 Email Providers
 
 Configure via `EMAIL_PROVIDER` environment variable:
 
@@ -89,10 +157,26 @@ Configure via `EMAIL_PROVIDER` environment variable:
 | `smtp` | Self-hosting | `SMTP_HOST`, `SMTP_FROM` |
 | `plunk` | Hosted version | `PLUNK_API_KEY` |
 
-## Contributing
+---
+
+## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines.
 
-## License
+---
+
+## 🔒 Security
+
+See [SECURITY.md](SECURITY.md) for vulnerability disclosure policy.
+
+---
+
+## 📄 License
 
 [AGPL-3.0](LICENSE)
+
+---
+
+<p align="center">
+  <sub>Built with ☕ and TypeScript</sub>
+</p>
