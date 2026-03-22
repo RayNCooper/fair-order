@@ -8,7 +8,7 @@ Guests scan, order, kitchen prepares. Self-host in one command with Docker Compo
 
 ---
 
-## ✨ Features
+## Features
 
 ### For Operators
 - **Magic Link Auth** — Passwordless login via email, no passwords to manage
@@ -35,7 +35,7 @@ Guests scan, order, kitchen prepares. Self-host in one command with Docker Compo
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -50,7 +50,7 @@ Guests scan, order, kitchen prepares. Self-host in one command with Docker Compo
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Docker (recommended)
 
@@ -88,7 +88,7 @@ pnpm dev:local
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 fairorder/
@@ -115,7 +115,7 @@ fairorder/
 
 ---
 
-## 🗄 Database Schema
+## Database Schema
 
 ```
 ┌──────────────┐       ┌──────────────┐       ┌──────────────┐
@@ -147,7 +147,7 @@ fairorder/
 
 ---
 
-## 📧 Email Providers
+## Email Providers
 
 Configure via `EMAIL_PROVIDER` environment variable:
 
@@ -159,24 +159,24 @@ Configure via `EMAIL_PROVIDER` environment variable:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines.
 
 ---
 
-## 🔒 Security
+## Security
 
 See [SECURITY.md](SECURITY.md) for vulnerability disclosure policy.
 
 ---
 
-## 📄 License
+## License
 
 [AGPL-3.0](LICENSE)
 
 ---
 
 <p align="center">
-  <sub>Built with ☕ and TypeScript</sub>
+  <sub>Built with TypeScript</sub>
 </p>
