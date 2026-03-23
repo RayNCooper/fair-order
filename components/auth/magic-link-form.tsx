@@ -10,6 +10,13 @@ export function MagicLinkForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!email.trim() || !email.includes("@")) {
+      setStatus("error");
+      setMessage("Bitte gib eine gültige E-Mail-Adresse ein.");
+      return;
+    }
+
     setStatus("loading");
     setMessage("");
 
