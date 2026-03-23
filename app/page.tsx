@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TextLogo } from "@/components/TextLogo";
 
 export default function Home() {
   return (
@@ -8,8 +9,8 @@ export default function Home() {
           <p className="font-mono text-[11px] uppercase tracking-[0.04em] text-muted-foreground">
             Open Source
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            FairOrder
+          <h1>
+            <TextLogo size="lg" />
           </h1>
           <p className="text-muted-foreground">
             Dein Speiseplan — in 5 Minuten live.
