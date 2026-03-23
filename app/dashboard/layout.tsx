@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/nav";
+import { TextLogo } from "@/components/TextLogo";
 
 export default async function DashboardLayout({
   children,
@@ -18,7 +19,9 @@ export default async function DashboardLayout({
       {/* Sidebar — hidden on mobile, 240px on md+ */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-sidebar-border md:bg-sidebar">
         <div className="p-4">
-          <h2 className="text-lg font-extrabold">FairOrder</h2>
+          <h2>
+            <TextLogo size="sm" />
+          </h2>
         </div>
         <DashboardNav />
       </aside>

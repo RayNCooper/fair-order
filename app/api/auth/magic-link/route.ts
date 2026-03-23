@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    console.error("magic-link error:", error);
     return NextResponse.json(
       { error: "Ein Fehler ist aufgetreten." },
       { status: 500 }
