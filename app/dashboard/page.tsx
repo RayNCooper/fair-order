@@ -2,14 +2,21 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
+import { VerifiedBanner } from "@/components/auth/verified-banner";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ verified?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const { verified } = await searchParams;
 
   const locations = await db.location.findMany({
     where: { userId: session.user.id },
@@ -28,6 +35,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {verified === "true" && <VerifiedBanner />}
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight">
           Übersicht

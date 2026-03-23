@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
   });
 
   if (locationCount === 0) {
-    return NextResponse.redirect(new URL("/setup", request.url));
+    return NextResponse.redirect(new URL("/setup?verified=true", request.url));
   }
 
-  return NextResponse.redirect(new URL("/dashboard", request.url));
+  return NextResponse.redirect(new URL("/dashboard?verified=true", request.url));
 }
