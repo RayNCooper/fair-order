@@ -84,7 +84,7 @@ export async function PUT(
       );
     }
 
-    // Build update data with timestamp tracking
+    // Atomic status transition — WHERE includes current status to prevent races
     const now = new Date();
     const updateData: Record<string, unknown> = { status: newStatus };
 
@@ -92,12 +92,20 @@ export async function PUT(
     if (newStatus === "READY") updateData.readyAt = now;
     if (newStatus === "COMPLETED") updateData.completedAt = now;
 
-    const updated = await db.order.update({
-      where: { id },
+    const updated = await db.order.updateMany({
+      where: { id, locationId: location.id, status: order.status as OrderStatus },
       data: updateData,
     });
 
-    return NextResponse.json({ order: updated });
+    if (updated.count === 0) {
+      return NextResponse.json(
+        { error: "Status wurde bereits geändert. Bitte aktualisiere die Anzeige." },
+        { status: 409 }
+      );
+    }
+
+    const refreshed = await db.order.findUnique({ where: { id } });
+    return NextResponse.json({ order: refreshed });
   } catch {
     return NextResponse.json(
       { error: "Ein Fehler ist aufgetreten." },

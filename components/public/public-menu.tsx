@@ -69,13 +69,18 @@ export function PublicMenu({
   }
 
   function updateQuantity(menuItemId: string, delta: number) {
-    setCart((prev) =>
-      prev
+    setCart((prev) => {
+      const updated = prev
         .map((c) =>
           c.menuItemId === menuItemId ? { ...c, quantity: c.quantity + delta } : c
         )
-        .filter((c) => c.quantity > 0)
-    );
+        .filter((c) => c.quantity > 0);
+      // Auto-close cart overlay when last item is removed
+      if (updated.length === 0 && orderState === "cart") {
+        setOrderState("idle");
+      }
+      return updated;
+    });
   }
 
   function getCartQuantity(menuItemId: string): number {

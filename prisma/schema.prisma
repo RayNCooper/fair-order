@@ -143,9 +143,9 @@ model Order {
 
   items OrderItem[]
 
+  @@unique([locationId, orderNumber])
   @@index([locationId, status])
   @@index([locationId, createdAt])
-  @@index([locationId, orderNumber])
 }
 
 enum OrderStatus {

@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
+const MAX_CUSTOMER_NAME_LENGTH = 100;
+const MAX_CUSTOMER_NOTE_LENGTH = 500;
+const MAX_ITEMS = 50;
+const MAX_QUANTITY = 99;
+
 export async function POST(request: NextRequest) {
+  // Parse JSON body — return 400 for malformed requests
+  let body: Record<string, unknown>;
   try {
-    const body = await request.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Ungültige Anfrage." },
+      { status: 400 }
+    );
+  }
+
+  try {
     const { locationId, customerName, customerNote, items } = body;
 
     // --- Validate required fields ---
@@ -15,9 +30,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!customerName || typeof customerName !== "string" || !customerName.trim()) {
+    if (!customerName || typeof customerName !== "string" || !String(customerName).trim()) {
       return NextResponse.json(
         { error: "Bitte gib deinen Namen an." },
+        { status: 400 }
+      );
+    }
+
+    if (String(customerName).trim().length > MAX_CUSTOMER_NAME_LENGTH) {
+      return NextResponse.json(
+        { error: `Name darf maximal ${MAX_CUSTOMER_NAME_LENGTH} Zeichen lang sein.` },
+        { status: 400 }
+      );
+    }
+
+    if (customerNote && typeof customerNote === "string" && customerNote.trim().length > MAX_CUSTOMER_NOTE_LENGTH) {
+      return NextResponse.json(
+        { error: `Hinweis darf maximal ${MAX_CUSTOMER_NOTE_LENGTH} Zeichen lang sein.` },
         { status: 400 }
       );
     }
@@ -29,13 +58,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (items.length > MAX_ITEMS) {
+      return NextResponse.json(
+        { error: `Maximal ${MAX_ITEMS} verschiedene Artikel pro Bestellung.` },
+        { status: 400 }
+      );
+    }
+
+    // --- Validate & deduplicate items ---
+
+    const deduped = new Map<string, number>();
+    for (const item of items) {
+      if (!item.menuItemId || typeof item.menuItemId !== "string") {
+        return NextResponse.json(
+          { error: "Ungültige Artikel-ID." },
+          { status: 400 }
+        );
+      }
+      if (!item.quantity || typeof item.quantity !== "number" || item.quantity < 1) {
+        return NextResponse.json(
+          { error: "Menge muss mindestens 1 sein." },
+          { status: 400 }
+        );
+      }
+      if (item.quantity > MAX_QUANTITY) {
+        return NextResponse.json(
+          { error: `Menge darf maximal ${MAX_QUANTITY} sein.` },
+          { status: 400 }
+        );
+      }
+      deduped.set(
+        item.menuItemId,
+        (deduped.get(item.menuItemId) ?? 0) + item.quantity
+      );
+    }
+
     // --- Validate location ---
 
     const location = await db.location.findUnique({
-      where: { id: locationId },
+      where: { id: locationId as string },
     });
 
-    if (!location) {
+    if (!location || !location.isPublic) {
       return NextResponse.json(
         { error: "Standort nicht gefunden." },
         { status: 404 }
@@ -49,49 +113,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // --- Check maxActiveOrders limit ---
-
-    const activeOrderCount = await db.order.count({
-      where: {
-        locationId,
-        status: { in: ["PENDING", "PREPARING", "READY"] },
-      },
-    });
-
-    if (activeOrderCount >= location.maxActiveOrders) {
-      return NextResponse.json(
-        { error: "Maximale Anzahl aktiver Bestellungen erreicht. Bitte versuche es später erneut." },
-        { status: 429 }
-      );
-    }
-
     // --- Validate menu items ---
 
-    const menuItemIds = items.map((item: { menuItemId: string }) => item.menuItemId);
+    const menuItemIds = [...deduped.keys()];
 
     const menuItems = await db.menuItem.findMany({
       where: {
         id: { in: menuItemIds },
-        locationId,
+        locationId: locationId as string,
       },
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const menuItemMap = new Map<string, any>(menuItems.map((mi: any) => [mi.id, mi]));
 
-    for (const item of items) {
-      if (!item.menuItemId || typeof item.menuItemId !== "string") {
-        return NextResponse.json(
-          { error: "Ungültige Artikel-ID." },
-          { status: 400 }
-        );
-      }
-
-      const menuItem = menuItemMap.get(item.menuItemId);
+    for (const [menuItemId] of deduped) {
+      const menuItem = menuItemMap.get(menuItemId);
 
       if (!menuItem) {
         return NextResponse.json(
-          { error: `Artikel „${item.menuItemId}" wurde nicht gefunden oder gehört nicht zu diesem Standort.` },
+          { error: `Artikel wurde nicht gefunden oder gehört nicht zu diesem Standort.` },
           { status: 400 }
         );
       }
@@ -102,64 +143,72 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-
-      if (!item.quantity || typeof item.quantity !== "number" || item.quantity < 1) {
-        return NextResponse.json(
-          { error: "Menge muss mindestens 1 sein." },
-          { status: 400 }
-        );
-      }
     }
 
-    // --- Generate next orderNumber ---
+    // --- Create order inside a transaction (atomic order number + maxActiveOrders check) ---
 
-    const lastOrder = await db.order.findFirst({
-      where: { locationId },
-      orderBy: { orderNumber: "desc" },
-      select: { orderNumber: true },
-    });
-
-    const orderNumber = (lastOrder?.orderNumber ?? 0) + 1;
-
-    // --- Calculate requestedPickupTime ---
-
-    const requestedPickupTime = new Date(
-      Date.now() + location.orderLeadTimeMinutes * 60 * 1000
-    );
-
-    // --- Create order with items ---
-
-    const order = await db.order.create({
-      data: {
-        locationId,
-        orderNumber,
-        customerName: customerName.trim(),
-        customerNote: customerNote?.trim() || null,
-        requestedPickupTime,
-        items: {
-          create: items.map((item: { menuItemId: string; quantity: number }) => ({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            unitPrice: menuItemMap.get(item.menuItemId)!.price,
-          })),
+    const order = await db.$transaction(async (tx) => {
+      const activeOrderCount = await tx.order.count({
+        where: {
+          locationId: locationId as string,
+          status: { in: ["PENDING", "PREPARING", "READY"] },
         },
-      },
-      include: {
-        items: {
-          include: {
-            menuItem: {
-              select: {
-                name: true,
-                description: true,
+      });
+
+      if (activeOrderCount >= location.maxActiveOrders) {
+        throw new Error("MAX_ACTIVE_ORDERS");
+      }
+
+      const lastOrder = await tx.order.findFirst({
+        where: { locationId: locationId as string },
+        orderBy: { orderNumber: "desc" },
+        select: { orderNumber: true },
+      });
+
+      const orderNumber = (lastOrder?.orderNumber ?? 0) + 1;
+
+      const requestedPickupTime = new Date(
+        Date.now() + location.orderLeadTimeMinutes * 60 * 1000
+      );
+
+      return tx.order.create({
+        data: {
+          locationId: locationId as string,
+          orderNumber,
+          customerName: String(customerName).trim(),
+          customerNote: customerNote ? String(customerNote).trim() || null : null,
+          requestedPickupTime,
+          items: {
+            create: [...deduped.entries()].map(([menuItemId, quantity]) => ({
+              menuItemId,
+              quantity,
+              unitPrice: menuItemMap.get(menuItemId)!.price,
+            })),
+          },
+        },
+        include: {
+          items: {
+            include: {
+              menuItem: {
+                select: {
+                  name: true,
+                  description: true,
+                },
               },
             },
           },
         },
-      },
+      });
     });
 
     return NextResponse.json(order, { status: 201 });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "MAX_ACTIVE_ORDERS") {
+      return NextResponse.json(
+        { error: "Maximale Anzahl aktiver Bestellungen erreicht. Bitte versuche es später erneut." },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
       { error: "Bestellung konnte nicht erstellt werden. Bitte versuche es erneut." },
       { status: 500 }

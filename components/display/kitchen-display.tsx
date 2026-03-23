@@ -66,6 +66,7 @@ function timeAgo(dateString: string): string {
 export function KitchenDisplay({ locationName, orders, displayToken }: KitchenDisplayProps) {
   const router = useRouter();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Auto-refresh every 10 seconds
   useEffect(() => {
@@ -75,8 +76,16 @@ export function KitchenDisplay({ locationName, orders, displayToken }: KitchenDi
     return () => clearInterval(interval);
   }, [router]);
 
+  // Auto-dismiss error after 4 seconds
+  useEffect(() => {
+    if (!errorMsg) return;
+    const t = setTimeout(() => setErrorMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [errorMsg]);
+
   async function updateStatus(orderId: string, newStatus: string) {
     setUpdatingId(orderId);
+    setErrorMsg(null);
     try {
       const res = await fetch(`/api/display/${displayToken}/orders/${orderId}/status`, {
         method: "PUT",
@@ -85,7 +94,13 @@ export function KitchenDisplay({ locationName, orders, displayToken }: KitchenDi
       });
       if (res.ok) {
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setErrorMsg(data?.error || "Status konnte nicht geändert werden.");
+        router.refresh();
       }
+    } catch {
+      setErrorMsg("Verbindungsfehler. Bitte erneut versuchen.");
     } finally {
       setUpdatingId(null);
     }
@@ -109,6 +124,13 @@ export function KitchenDisplay({ locationName, orders, displayToken }: KitchenDi
           {orders.length} {orders.length === 1 ? "Bestellung" : "Bestellungen"}
         </div>
       </header>
+
+      {/* Error banner */}
+      {errorMsg && (
+        <div className="bg-red-600 px-4 py-2 text-center text-sm font-bold text-white">
+          {errorMsg}
+        </div>
+      )}
 
       {/* Content */}
       {!hasOrders ? (

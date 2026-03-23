@@ -78,7 +78,22 @@ export async function PUT(
     }
 
     if (body.imageUrl !== undefined) {
-      data.imageUrl = body.imageUrl?.trim() || null;
+      const url = body.imageUrl?.trim() || null;
+      if (url) {
+        // Only allow URLs from known storage origins or placeholder
+        const allowed =
+          url === "/placeholder-food.svg" ||
+          (process.env.NEXT_PUBLIC_BUNNY_CDN_URL && url.startsWith(process.env.NEXT_PUBLIC_BUNNY_CDN_URL)) ||
+          (process.env.NEXT_PUBLIC_MINIO_URL && url.startsWith(process.env.NEXT_PUBLIC_MINIO_URL)) ||
+          url.startsWith("http://localhost:9000");
+        if (!allowed) {
+          return NextResponse.json(
+            { error: "Ungültige Bild-URL." },
+            { status: 400 }
+          );
+        }
+      }
+      data.imageUrl = url;
     }
 
     if (body.isAvailable !== undefined) {
