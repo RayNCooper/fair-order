@@ -110,7 +110,8 @@ fairorder/
 │   ├── auth.ts           # Session management
 │   ├── db.ts             # Prisma client
 │   ├── email.ts          # Email provider (plunk/smtp/console)
-│   └── magic-link.ts     # Token creation & verification
+│   ├── magic-link.ts     # Token creation & verification
+│   └── utils.ts          # cn() helper
 ├── prisma/
 │   ├── schema.prisma     # Database schema
 │   └── seed.ts           # Demo data
