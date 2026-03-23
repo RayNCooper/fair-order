@@ -30,14 +30,9 @@ cd fairorder
 pnpm install
 cp .env.example .env        # Edit DATABASE_URL to point to your PostgreSQL
 pnpm db:generate
-pnpm dev:local               # Starts without dotenvx
-```
-
-To seed demo data:
-
-```bash
-pnpm db:push                 # Push schema to DB (development)
-pnpm db:seed                 # Seed demo location + menu
+pnpm db:push                # Push schema to DB
+pnpm db:seed                # Seed demo location + menu (optional)
+pnpm dev:local              # Starts without dotenvx
 ```
 
 ## Development vs Production
@@ -73,12 +68,21 @@ pnpm db:seed                 # Seed demo location + menu
 
 Look for issues labeled `good first issue`. These are scoped, well-described tasks that don't require deep knowledge of the codebase.
 
-## Email Provider
+## Pluggable Providers
 
-FairOrder supports 3 email providers via the `EMAIL_PROVIDER` env var:
+FairOrder uses an adapter pattern for external services. Each provider defaults to a no-config development mode:
 
+### Email (`EMAIL_PROVIDER`)
 - `console` — Logs emails to terminal (default in development)
 - `smtp` — Any SMTP server (use Mailpit locally, or Sendgrid/SES/etc. in production)
 - `plunk` — Plunk ESP API (used by the hosted version)
 
-For local development, `console` is the default — no email setup needed.
+### Payment (`PAYMENT_PROVIDER`)
+- `cash` — Pay at the till (default)
+- `stripe` — Stripe prepayment (requires `STRIPE_SECRET_KEY` and related env vars)
+
+### Menu Extraction (`MENU_EXTRACTION_PROVIDER`)
+- `console` — Returns mock data (default in development)
+- `gemini` — Google Gemini AI via Vercel AI SDK (requires `GEMINI_API_KEY`)
+
+For local development, all providers default to their no-config mode — no API keys needed.
