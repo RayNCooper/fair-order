@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -25,26 +25,33 @@ interface Order {
 interface KitchenDisplayProps {
   locationName: string;
   orders: Order[];
+  displayToken: string;
 }
 
-const COLUMNS: { status: OrderStatus; label: string; headerClass: string; cardBorder: string }[] = [
+const COLUMNS: { status: OrderStatus; label: string; headerClass: string; cardBorder: string; nextStatus: OrderStatus | null; nextLabel: string }[] = [
   {
     status: "PENDING",
     label: "Ausstehend",
     headerClass: "bg-amber-500 text-white",
     cardBorder: "border-l-amber-500",
+    nextStatus: "PREPARING",
+    nextLabel: "Zubereitung starten",
   },
   {
     status: "PREPARING",
     label: "In Zubereitung",
     headerClass: "bg-blue-500 text-white",
     cardBorder: "border-l-blue-500",
+    nextStatus: "READY",
+    nextLabel: "Bereit",
   },
   {
     status: "READY",
     label: "Bereit",
     headerClass: "bg-green-500 text-white",
     cardBorder: "border-l-green-500",
+    nextStatus: null,
+    nextLabel: "Abgeholt",
   },
 ];
 
@@ -56,8 +63,10 @@ function timeAgo(dateString: string): string {
   return `vor ${mins} Min.`;
 }
 
-export function KitchenDisplay({ locationName, orders }: KitchenDisplayProps) {
+export function KitchenDisplay({ locationName, orders, displayToken }: KitchenDisplayProps) {
   const router = useRouter();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Auto-refresh every 10 seconds
   useEffect(() => {
@@ -66,6 +75,36 @@ export function KitchenDisplay({ locationName, orders }: KitchenDisplayProps) {
     }, 10_000);
     return () => clearInterval(interval);
   }, [router]);
+
+  // Auto-dismiss error after 4 seconds
+  useEffect(() => {
+    if (!errorMsg) return;
+    const t = setTimeout(() => setErrorMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [errorMsg]);
+
+  async function updateStatus(orderId: string, newStatus: string) {
+    setUpdatingId(orderId);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/display/${displayToken}/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setErrorMsg(data?.error || "Status konnte nicht geändert werden.");
+        router.refresh();
+      }
+    } catch {
+      setErrorMsg("Verbindungsfehler. Bitte erneut versuchen.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   const hasOrders = orders.length > 0;
 
@@ -85,6 +124,13 @@ export function KitchenDisplay({ locationName, orders }: KitchenDisplayProps) {
           {orders.length} {orders.length === 1 ? "Bestellung" : "Bestellungen"}
         </div>
       </header>
+
+      {/* Error banner */}
+      {errorMsg && (
+        <div className="bg-red-600 px-4 py-2 text-center text-sm font-bold text-white">
+          {errorMsg}
+        </div>
+      )}
 
       {/* Content */}
       {!hasOrders ? (
@@ -163,6 +209,32 @@ export function KitchenDisplay({ locationName, orders }: KitchenDisplayProps) {
                             {order.customerNote}
                           </p>
                         )}
+
+                        {/* Status action buttons */}
+                        <div className="mt-3 flex gap-2 border-t border-stone-800 pt-3">
+                          {col.nextStatus && (
+                            <button
+                              className={cn(
+                                "flex-1 py-2 text-sm font-bold uppercase tracking-wider transition-colors disabled:opacity-50",
+                                col.status === "PENDING" && "bg-blue-600 text-white hover:bg-blue-500",
+                                col.status === "PREPARING" && "bg-green-600 text-white hover:bg-green-500",
+                              )}
+                              disabled={updatingId === order.id}
+                              onClick={() => updateStatus(order.id, col.nextStatus!)}
+                            >
+                              {updatingId === order.id ? "..." : col.nextLabel}
+                            </button>
+                          )}
+                          {col.status === "READY" && (
+                            <button
+                              className="flex-1 bg-stone-700 py-2 text-sm font-bold uppercase tracking-wider text-stone-200 transition-colors hover:bg-stone-600 disabled:opacity-50"
+                              disabled={updatingId === order.id}
+                              onClick={() => updateStatus(order.id, "COMPLETED")}
+                            >
+                              {updatingId === order.id ? "..." : "Abgeholt"}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}

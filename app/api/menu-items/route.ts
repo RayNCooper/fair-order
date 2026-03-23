@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         name: body.name.trim(),
         description: body.description?.trim() || null,
         price: Number(body.price),
+        imageUrl: body.imageUrl?.trim() || null,
         categoryId: body.categoryId || null,
         locationId: location.id,
         isAvailable: body.isAvailable ?? true,

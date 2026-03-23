@@ -1,0 +1,6 @@
+{
+    "scripts": {
+        "setup": "cp \"$CONDUCTOR_ROOT_PATH/../../fair-order-product-app.env\" .env && cp \"$CONDUCTOR_ROOT_PATH/../../fair-order-product-app.env.production\" .env.production && pnpm install && pnpm db:generate",
+        "run": "pnpm dev:local"
+    }
+}
