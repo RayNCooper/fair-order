@@ -23,7 +23,9 @@ yarn-debug.log*
 yarn-error.log*
 firebase-debug.log
 
-# env files — encrypted .env is safe to commit, keys are not
+# env files
+.env
+.env.production
 .env.keys
 .env.local
 .env.*.local

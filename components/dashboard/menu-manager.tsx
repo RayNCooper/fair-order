@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,9 @@ import {
   IconToolsKitchen2,
   IconCategory,
   IconGripVertical,
+  IconUpload,
+  IconX,
+  IconLoader2,
 } from "@tabler/icons-react";
 
 interface MenuItem {
@@ -48,6 +51,7 @@ interface MenuItem {
   name: string;
   description: string | null;
   price: string | number;
+  imageUrl: string | null;
   categoryId: string | null;
   isAvailable: boolean;
   sortOrder: number;
@@ -88,10 +92,13 @@ export function MenuManager({ initialCategories }: MenuManagerProps) {
     name: "",
     description: "",
     price: "",
+    imageUrl: "",
     categoryId: "",
     isAvailable: true,
   });
   const [itemSaving, setItemSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -195,6 +202,7 @@ export function MenuManager({ initialCategories }: MenuManagerProps) {
       name: "",
       description: "",
       price: "",
+      imageUrl: "",
       categoryId: categoryId || "",
       isAvailable: true,
     });
@@ -208,6 +216,7 @@ export function MenuManager({ initialCategories }: MenuManagerProps) {
       name: item.name,
       description: item.description || "",
       price: formatPrice(item.price),
+      imageUrl: item.imageUrl || "",
       categoryId: item.categoryId || "",
       isAvailable: item.isAvailable,
     });
@@ -236,6 +245,7 @@ export function MenuManager({ initialCategories }: MenuManagerProps) {
         name: itemForm.name.trim(),
         description: itemForm.description.trim() || null,
         price: priceNum,
+        imageUrl: itemForm.imageUrl.trim() || null,
         categoryId: itemForm.categoryId || null,
         isAvailable: itemForm.isAvailable,
       };
@@ -355,6 +365,41 @@ export function MenuManager({ initialCategories }: MenuManagerProps) {
           ),
         }))
       );
+    }
+  }
+
+  // ─── Image upload ───────────────────────────────────
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Bild konnte nicht hochgeladen werden.");
+        return;
+      }
+
+      const { url } = await res.json();
+      setItemForm((f) => ({ ...f, imageUrl: url }));
+    } catch {
+      setError("Bild konnte nicht hochgeladen werden.");
+    } finally {
+      setUploading(false);
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -516,6 +561,13 @@ export function MenuManager({ initialCategories }: MenuManagerProps) {
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="h-12 w-12 shrink-0 object-cover border border-stone-200"
+                        />
+                      )}
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate text-sm font-bold">
                           {item.name}
@@ -700,6 +752,57 @@ export function MenuManager({ initialCategories }: MenuManagerProps) {
                 }
                 placeholder="Optionale Beschreibung des Gerichts"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Bild</Label>
+              {itemForm.imageUrl ? (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={itemForm.imageUrl}
+                    alt="Vorschau"
+                    className="h-16 w-16 border border-stone-200 object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none"
+                    onClick={() => setItemForm((f) => ({ ...f, imageUrl: "" }))}
+                  >
+                    <IconX size={14} />
+                    Entfernen
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-none"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? (
+                      <IconLoader2 size={14} className="animate-spin" />
+                    ) : (
+                      <IconUpload size={14} />
+                    )}
+                    {uploading ? "Hochladen..." : "Bild hochladen"}
+                  </Button>
+                  <p className="mt-1 text-xs text-stone-400">
+                    JPEG, PNG oder WebP, max. 5 MB
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

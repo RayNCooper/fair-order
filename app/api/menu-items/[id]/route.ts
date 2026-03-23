@@ -77,6 +77,10 @@ export async function PUT(
       data.categoryId = body.categoryId || null;
     }
 
+    if (body.imageUrl !== undefined) {
+      data.imageUrl = body.imageUrl?.trim() || null;
+    }
+
     if (body.isAvailable !== undefined) {
       data.isAvailable = Boolean(body.isAvailable);
     }

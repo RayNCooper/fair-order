@@ -56,6 +56,7 @@ export default async function DisplayPage({ params }: DisplayPageProps) {
     <KitchenDisplay
       locationName={location.name}
       orders={serializedOrders}
+      displayToken={token}
     />
   );
 }

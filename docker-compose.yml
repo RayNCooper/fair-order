@@ -12,6 +12,12 @@ services:
       MAGIC_LINK_BASE_URL: "http://localhost:3000"
       NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      STORAGE_PROVIDER: "minio"
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "fairorder"
+      MINIO_SECRET_KEY: "fairorder"
+      MINIO_BUCKET: "fairorder-images"
+      NEXT_PUBLIC_MINIO_URL: "http://localhost:9000"
       DB_HOST: "db"
       DB_PORT: "5432"
       DB_USER: "fairorder"
@@ -35,6 +41,30 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: fairorder
+      MINIO_ROOT_PASSWORD: fairorder
+    volumes:
+      - minio-data:/data
+
+  minio-setup:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 2;
+      mc alias set local http://minio:9000 fairorder fairorder;
+      mc mb --ignore-existing local/fairorder-images;
+      mc anonymous set download local/fairorder-images;
+      "
+
   mailpit:
     image: axllent/mailpit
     ports:
@@ -45,3 +75,4 @@ services:
 
 volumes:
   pgdata:
+  minio-data:
