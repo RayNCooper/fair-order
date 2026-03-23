@@ -42,6 +42,119 @@ function SectionCard({
   );
 }
 
+const WEEKDAYS = [
+  { key: "monday", label: "Montag" },
+  { key: "tuesday", label: "Dienstag" },
+  { key: "wednesday", label: "Mittwoch" },
+  { key: "thursday", label: "Donnerstag" },
+  { key: "friday", label: "Freitag" },
+  { key: "saturday", label: "Samstag" },
+  { key: "sunday", label: "Sonntag" },
+] as const;
+
+interface HoursSlot {
+  open: string;
+  close: string;
+}
+
+type HoursData = Record<string, HoursSlot[] | null>;
+
+function parseHours(raw: string): HoursData {
+  if (!raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null) return parsed;
+  } catch {
+    // Not JSON — return empty
+  }
+  return {};
+}
+
+function serializeHours(data: HoursData): string {
+  const cleaned: HoursData = {};
+  for (const day of WEEKDAYS) {
+    const slots = data[day.key];
+    if (slots && slots.length > 0 && slots[0].open && slots[0].close) {
+      cleaned[day.key] = slots;
+    } else {
+      cleaned[day.key] = null;
+    }
+  }
+  return JSON.stringify(cleaned, null, 2);
+}
+
+function OperatingHoursEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const data = parseHours(value);
+
+  function updateDay(dayKey: string, open: string, close: string) {
+    const next = { ...data };
+    if (open || close) {
+      next[dayKey] = [{ open, close }];
+    } else {
+      next[dayKey] = null;
+    }
+    onChange(serializeHours(next));
+  }
+
+  function toggleDay(dayKey: string, enabled: boolean) {
+    const next = { ...data };
+    if (enabled) {
+      next[dayKey] = [{ open: "07:30", close: "15:00" }];
+    } else {
+      next[dayKey] = null;
+    }
+    onChange(serializeHours(next));
+  }
+
+  return (
+    <div className="space-y-2">
+      {WEEKDAYS.map((day) => {
+        const slots = data[day.key];
+        const isActive = slots && slots.length > 0 && (slots[0].open || slots[0].close);
+        const open = slots?.[0]?.open ?? "";
+        const close = slots?.[0]?.close ?? "";
+
+        return (
+          <div key={day.key} className="flex items-center gap-3">
+            <div className="flex w-24 items-center gap-2">
+              <Switch
+                checked={!!isActive}
+                onCheckedChange={(checked) => toggleDay(day.key, checked)}
+              />
+              <span className="text-xs font-medium">{day.label}</span>
+            </div>
+            {isActive ? (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="time"
+                  value={open}
+                  onChange={(e) => updateDay(day.key, e.target.value, close)}
+                  className="w-28 rounded-none font-mono text-xs"
+                />
+                <span className="text-xs text-muted-foreground">–</span>
+                <Input
+                  type="time"
+                  value={close}
+                  onChange={(e) => updateDay(day.key, open, e.target.value)}
+                  className="w-28 rounded-none font-mono text-xs"
+                />
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">Geschlossen</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function LocationSettingsForm({ location }: { location: LocationData }) {
   const router = useRouter();
   const [name, setName] = useState(location.name);
@@ -123,16 +236,13 @@ export function LocationSettingsForm({ location }: { location: LocationData }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="operating-hours">Öffnungszeiten</Label>
-          <Input
-            id="operating-hours"
+          <Label>Öffnungszeiten</Label>
+          <OperatingHoursEditor
             value={operatingHours}
-            onChange={(e) => setOperatingHours(e.target.value)}
-            placeholder='z.B. Mo-Fr 8:00-16:00'
-            className="rounded-none"
+            onChange={setOperatingHours}
           />
           <p className="text-xs text-muted-foreground">
-            Freitext oder JSON-Format.
+            Lege die Öffnungszeiten für jeden Wochentag fest.
           </p>
         </div>
 

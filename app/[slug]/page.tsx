@@ -79,6 +79,8 @@ export default async function PublicMenuPage({ params }: MenuPageProps) {
       orderingEnabled={location.orderingEnabled}
       categories={categories}
       uncategorizedItems={uncategorizedItems}
+      operatingHours={location.operatingHours as Record<string, { open: string; close: string }[] | null> | null}
+      timezone={location.timezone}
     />
   );
 }
