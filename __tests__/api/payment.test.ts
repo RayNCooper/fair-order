@@ -188,6 +188,90 @@ describe("POST /api/payment/create-intent", () => {
     })
   })
 
+  it("returns 400 for zero-amount order (empty items)", async () => {
+    vi.mocked(db.location.findUnique).mockResolvedValue({
+      paymentEnabled: true,
+      acceptedPayments: ["stripe"],
+    } as never)
+    vi.mocked(db.order.findUnique).mockResolvedValue({
+      ...mockOrder,
+      items: [],
+    } as never)
+
+    const res = await POST(makeRequest(validBody))
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toContain("Ungültiger Bestellbetrag")
+  })
+
+  it("handles floating point prices correctly (no rounding errors)", async () => {
+    vi.mocked(db.location.findUnique).mockResolvedValue({
+      paymentEnabled: true,
+      acceptedPayments: ["stripe"],
+    } as never)
+    // 0.1 + 0.2 = 0.30000000000000004 in JS — should round correctly
+    vi.mocked(db.order.findUnique).mockResolvedValue({
+      ...mockOrder,
+      items: [
+        { unitPrice: 0.1, quantity: 1 },
+        { unitPrice: 0.2, quantity: 1 },
+      ],
+    } as never)
+    vi.mocked(createPaymentIntent).mockResolvedValue({
+      success: true,
+      transactionId: "pi_fp",
+      clientSecret: "secret",
+    })
+    vi.mocked(db.order.update).mockResolvedValue({} as never)
+
+    await POST(makeRequest(validBody))
+
+    // Each price is Math.round(price * 100) * qty, summed:
+    // Math.round(0.1 * 100) * 1 = 10, Math.round(0.2 * 100) * 1 = 20 => 30 cents
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 30 })
+    )
+  })
+
+  it("uses 'Gast' as fallback when customerName is null", async () => {
+    vi.mocked(db.location.findUnique).mockResolvedValue({
+      paymentEnabled: true,
+      acceptedPayments: ["stripe"],
+    } as never)
+    vi.mocked(db.order.findUnique).mockResolvedValue({
+      ...mockOrder,
+      customerName: null,
+    } as never)
+    vi.mocked(createPaymentIntent).mockResolvedValue({
+      success: true,
+      transactionId: "pi_guest",
+      clientSecret: "secret",
+    })
+    vi.mocked(db.order.update).mockResolvedValue({} as never)
+
+    await POST(makeRequest(validBody))
+
+    expect(createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ customerName: "Gast" })
+    )
+  })
+
+  it("returns 400 if locationId is not a string", async () => {
+    const res = await POST(makeRequest({ locationId: 123, orderId: "order-1" }))
+    expect(res.status).toBe(400)
+  })
+
+  it("returns 400 if orderId is not a string", async () => {
+    const res = await POST(makeRequest({ locationId: "loc-1", orderId: 456 }))
+    expect(res.status).toBe(400)
+  })
+
+  it("returns 500 on unexpected DB error", async () => {
+    vi.mocked(db.location.findUnique).mockRejectedValue(new Error("DB down"))
+    const res = await POST(makeRequest(validBody))
+    expect(res.status).toBe(500)
+  })
+
   it("returns 502 when payment provider fails", async () => {
     vi.mocked(db.location.findUnique).mockResolvedValue({
       paymentEnabled: true,

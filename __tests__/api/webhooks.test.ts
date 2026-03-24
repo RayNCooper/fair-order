@@ -107,6 +107,43 @@ describe("POST /api/webhooks/stripe", () => {
     })
   })
 
+  it("does not overwrite paid status on payment_failed event", async () => {
+    // This tests the idempotency guard: if a payment was already confirmed
+    // as paid, a subsequent failure event should not downgrade the status.
+    // The where clause uses { not: "paid" } to prevent this.
+    mockConstructEvent.mockReturnValue({
+      type: "payment_intent.payment_failed",
+      data: { object: { id: "pi_paid" } },
+    })
+
+    const res = await POST(makeRequest("{}", "sig_valid"))
+    expect(res.status).toBe(200)
+
+    expect(mockUpdateMany).toHaveBeenCalledWith({
+      where: {
+        paymentIntentId: "pi_paid",
+        paymentStatus: { not: "paid" },
+      },
+      data: {
+        paymentStatus: "failed",
+      },
+    })
+  })
+
+  it("returns 200 even when DB update throws (prevents Stripe retries)", async () => {
+    mockConstructEvent.mockReturnValue({
+      type: "payment_intent.succeeded",
+      data: { object: { id: "pi_err" } },
+    })
+    mockUpdateMany.mockRejectedValue(new Error("DB timeout"))
+
+    const res = await POST(makeRequest("{}", "sig_valid"))
+    // Should still return 200 to prevent Stripe from retrying
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.received).toBe(true)
+  })
+
   it("acknowledges unknown event types without updating orders", async () => {
     mockConstructEvent.mockReturnValue({
       type: "charge.refunded",
