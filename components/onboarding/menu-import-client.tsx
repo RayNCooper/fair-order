@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   IconUpload,
@@ -105,25 +105,21 @@ function decodeMenuParam(encoded: string): OCRItem[] {
 export function MenuImportClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Decode ?menu= param for pre-populated menu items (from external tools)
+  const preloaded = useMemo(() => {
+    const menuParam = searchParams.get("menu");
+    if (!menuParam) return null;
+    const decoded = decodeMenuParam(menuParam);
+    return decoded.length > 0 ? decoded : null;
+  }, [searchParams]);
+
   const [stage, setStage] = useState<
     "upload" | "processing" | "review" | "importing"
-  >("upload");
-  const [ocrItems, setOcrItems] = useState<OCRItem[]>([]);
+  >(preloaded ? "review" : "upload");
+  const [ocrItems, setOcrItems] = useState<OCRItem[]>(preloaded ?? []);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Check for ?menu= param on mount
-  useEffect(() => {
-    const menuParam = searchParams.get("menu");
-    if (menuParam) {
-      const decoded = decodeMenuParam(menuParam);
-      if (decoded.length > 0) {
-        setOcrItems(decoded);
-        setStage("review");
-      }
-    }
-  }, [searchParams]);
 
   const handleFileSelect = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
