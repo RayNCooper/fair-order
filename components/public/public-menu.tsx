@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import {
+  StripePaymentForm,
+  PaymentMethodSelector,
+  type PaymentMethod,
+} from "./payment-form";
 
 // ── Types ────────────────────────────────────────────
 
@@ -29,6 +34,8 @@ interface PublicMenuProps {
   locationId: string;
   locationName: string;
   orderingEnabled: boolean;
+  paymentEnabled: boolean;
+  acceptedPayments: string[];
   categories: Category[];
   uncategorizedItems: MenuItem[];
   operatingHours?: Record<string, OperatingHoursDay[] | null> | null;
@@ -152,12 +159,14 @@ function formatHoursOverview(
 
 // ── Main Component ───────────────────────────────────
 
-type OrderState = "idle" | "cart" | "submitting" | "success" | "error";
+type OrderState = "idle" | "cart" | "submitting" | "paying" | "success" | "error";
 
 export function PublicMenu({
   locationId,
   locationName,
   orderingEnabled,
+  paymentEnabled,
+  acceptedPayments,
   categories,
   uncategorizedItems,
   operatingHours,
@@ -169,6 +178,11 @@ export function PublicMenu({
   const [customerNote, setCustomerNote] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  const stripeAvailable = paymentEnabled && acceptedPayments.includes("stripe");
 
   // Search & filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -340,6 +354,30 @@ export function PublicMenu({
 
       const order = await res.json();
       setOrderNumber(order.orderNumber);
+      setOrderId(order.id);
+
+      // If Stripe payment selected, create payment intent
+      if (paymentMethod === "stripe" && stripeAvailable) {
+        const piRes = await fetch("/api/payment/create-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locationId, orderId: order.id }),
+        });
+
+        if (!piRes.ok) {
+          const piData = await piRes.json();
+          setErrorMessage(piData.error || "Zahlung konnte nicht erstellt werden.");
+          setOrderState("error");
+          return;
+        }
+
+        const { clientSecret: secret } = await piRes.json();
+        setClientSecret(secret);
+        setOrderState("paying");
+        return;
+      }
+
+      // Cash payment — immediate success
       setOrderState("success");
       setCart([]);
       setCustomerName("");
@@ -371,6 +409,44 @@ export function PublicMenu({
       }
       return next;
     });
+  }
+
+  // ── Payment screen ──
+  if (orderState === "paying" && clientSecret && orderId) {
+    return (
+      <div className="min-h-dvh bg-[#FAFAF8]">
+        <header className="border-b border-stone-200 bg-white px-4 py-6 text-center">
+          <h1 className="text-2xl font-extrabold tracking-tight text-stone-900">
+            {locationName}
+          </h1>
+        </header>
+        <main className="mx-auto max-w-md px-4 py-8">
+          <div className="space-y-4">
+            <h2 className="text-lg font-extrabold text-stone-900">Zahlung</h2>
+            <p className="text-sm text-stone-500">
+              Bestellung #{orderNumber} &mdash; {formatPrice(cartTotal)}&nbsp;&euro;
+            </p>
+            <StripePaymentForm
+              clientSecret={clientSecret}
+              amount={Math.round(cartTotal * 100)}
+              orderId={orderId}
+              onSuccess={() => {
+                setOrderState("success");
+                setCart([]);
+                setCustomerName("");
+                setCustomerNote("");
+                setClientSecret(null);
+              }}
+              onError={(msg) => {
+                setErrorMessage(msg);
+                setOrderState("error");
+                setClientSecret(null);
+              }}
+            />
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // ── Success screen ──
@@ -754,6 +830,15 @@ export function PublicMenu({
                   />
                 </div>
               </div>
+
+              {/* Payment method */}
+              {stripeAvailable && (
+                <PaymentMethodSelector
+                  acceptedPayments={acceptedPayments}
+                  selected={paymentMethod}
+                  onSelect={setPaymentMethod}
+                />
+              )}
 
               {/* Error */}
               {errorMessage && (

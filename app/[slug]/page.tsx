@@ -77,6 +77,8 @@ export default async function PublicMenuPage({ params }: MenuPageProps) {
       locationId={location.id}
       locationName={location.name}
       orderingEnabled={location.orderingEnabled}
+      paymentEnabled={location.paymentEnabled}
+      acceptedPayments={location.acceptedPayments}
       categories={categories}
       uncategorizedItems={uncategorizedItems}
       operatingHours={location.operatingHours as Record<string, { open: string; close: string }[] | null> | null}
