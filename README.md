@@ -73,7 +73,7 @@ cd fairorder
 pnpm install
 cp .env.example .env    # Edit DATABASE_URL
 pnpm db:generate
-pnpm db:push
+pnpm db:migrate
 pnpm db:seed
 pnpm dev:local
 ```

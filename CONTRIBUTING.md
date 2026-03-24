@@ -30,7 +30,7 @@ cd fairorder
 pnpm install
 cp .env.example .env        # Edit DATABASE_URL to point to your PostgreSQL
 pnpm db:generate
-pnpm db:push                # Push schema to DB
+pnpm db:migrate             # Run database migrations
 pnpm db:seed                # Seed demo location + menu (optional)
 pnpm dev:local              # Starts without dotenvx
 ```
@@ -45,7 +45,7 @@ pnpm dev:local              # Starts without dotenvx
 | `pnpm test` | Run test suite (Vitest) |
 | `pnpm lint` | Run ESLint |
 | `pnpm db:generate` | Regenerate Prisma client |
-| `pnpm db:push` | Push schema to DB (dev — no migration history) |
+| `pnpm db:migrate` | Run migrations (applies schema changes safely) |
 | `pnpm db:migrate` | Run migrations (production-safe) |
 | `pnpm db:seed` | Seed demo data (idempotent) |
 

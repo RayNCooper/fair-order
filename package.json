@@ -14,7 +14,6 @@
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:migrate": "dotenvx run -- prisma migrate dev",
-    "db:push": "prisma db push",
     "db:seed": "npx tsx --env-file=.env prisma/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest",

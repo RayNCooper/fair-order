@@ -27,7 +27,6 @@ pnpm lint         # Run ESLint
 pnpm test         # Run Vitest test suite
 pnpm db:generate  # Regenerate Prisma client
 pnpm db:migrate   # Run migrations (dev)
-pnpm db:push      # Push schema to DB without migration
 pnpm db:seed      # Seed demo data (idempotent)
 ```
 
