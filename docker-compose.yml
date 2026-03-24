@@ -21,7 +21,7 @@ services:
       DB_HOST: "db"
       DB_PORT: "5432"
       DB_USER: "fairorder"
-      CRON_SECRET: "${CRON_SECRET:-default-cron-secret}"
+      CRON_SECRET: "${CRON_SECRET:?Set CRON_SECRET in your environment}"
     depends_on:
       db:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
     depends_on:
       - app
     environment:
-      CRON_SECRET: "${CRON_SECRET:-default-cron-secret}"
+      CRON_SECRET: "${CRON_SECRET:?Set CRON_SECRET in your environment}"
     entrypoint: >
       /bin/sh -c "
       echo '*/2 * * * * wget -qO- --header=\"Authorization: Bearer '\"$$CRON_SECRET\"'\" http://app:3000/api/cron/verify-payments > /proc/1/fd/1 2>&1' | crontab -

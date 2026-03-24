@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Lazy-load Stripe.js only when needed
 let stripePromise: Promise<import("@stripe/stripe-js").Stripe | null> | null = null;
@@ -37,16 +37,20 @@ export function StripePaymentForm({
   const [processing, setProcessing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [ready, setReady] = useState(false);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     const p = getStripe();
     if (!p) {
-      onError("Stripe ist nicht konfiguriert.");
+      onErrorRef.current("Stripe ist nicht konfiguriert.");
       return;
     }
     p.then((s) => {
       if (!s) {
-        onError("Stripe konnte nicht geladen werden.");
+        onErrorRef.current("Stripe konnte nicht geladen werden.");
         return;
       }
       setStripe(s);
@@ -63,7 +67,7 @@ export function StripePaymentForm({
       });
       setElements(el);
     });
-  }, [clientSecret, onError]);
+  }, [clientSecret]);
 
   useEffect(() => {
     if (!elements) return;

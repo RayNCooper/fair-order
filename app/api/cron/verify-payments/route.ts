@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
         id: true,
         paymentIntentId: true,
       },
+      take: 50, // Batch limit to avoid timeout on large backlogs
+      orderBy: { createdAt: "asc" }, // Oldest first
     });
 
     let confirmed = 0;

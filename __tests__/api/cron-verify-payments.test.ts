@@ -76,6 +76,8 @@ describe("GET /api/cron/verify-payments", () => {
         id: true,
         paymentIntentId: true,
       },
+      take: 50,
+      orderBy: { createdAt: "asc" },
     })
 
     // Verify the date is approximately 2 minutes ago

@@ -61,6 +61,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If a PaymentIntent already exists (e.g., double-click), return the existing one
+    if (order.paymentIntentId && order.paymentStatus === "pending") {
+      try {
+        const { default: Stripe } = await import("stripe");
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+        const existing = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+        if (existing.client_secret) {
+          return NextResponse.json({
+            clientSecret: existing.client_secret,
+            transactionId: existing.id,
+          });
+        }
+      } catch {
+        // If retrieval fails, fall through to create a new one
+      }
+    }
+
     // Compute amount server-side from order items (in cents)
     const amount = order.items.reduce(
       (sum, item) =>
