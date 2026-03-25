@@ -5,10 +5,10 @@ All notable changes to the FairOrder product app are documented in this file.
 ## [0.5.0.0] - 2026-03-25
 
 ### Added
-- Guest pickup time selection — 15-minute windows generated from operating hours
-- Rush distribution — operators can cap orders per time slot (`maxOrdersPerSlot`)
-- Order-ready email notifications — optional email at checkout, notified when order is READY
-- Analytics dashboard with recharts — orders/day, revenue/day, popular items, peak hours
+- Guests can choose a pickup time — 15-minute windows generated from operating hours
+- Operators can cap orders per time slot (`maxOrdersPerSlot`) to smooth kitchen load
+- Order-ready email notifications — guests optionally leave their email at checkout and get notified when their order is READY
+- Analytics dashboard — orders/day, revenue/day, popular items, peak hours (powered by Recharts)
 - Day-end report with print and CSV export
 - react-email templates with inline FairOrder logo (magic link + order ready)
 - 30 new tests covering all new code paths (136 → 166 total)

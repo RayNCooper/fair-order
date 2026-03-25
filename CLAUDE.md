@@ -17,6 +17,7 @@ FairOrder is developed publicly — code, decisions, and progress are all visibl
 ## Commands
 
 ```bash
+# ── Local (pnpm) ──
 pnpm dev          # Dev server (dotenvx — maintainers)
 pnpm dev:local    # Dev server (plain .env — contributors)
 pnpm build        # Production build (dotenvx)
@@ -28,6 +29,12 @@ pnpm test         # Run Vitest test suite
 pnpm db:generate  # Regenerate Prisma client
 pnpm db:migrate   # Run migrations (dev)
 pnpm db:seed      # Seed demo data (idempotent)
+
+# ── Docker ──
+docker compose up              # Start app + db + minio + cron
+docker compose --profile mail up  # + Mailpit email testing (localhost:8025)
+docker compose up --build      # Rebuild after code changes
+docker compose down -v         # Reset everything (deletes database + uploads)
 ```
 
 ## Tech Stack
@@ -69,6 +76,9 @@ components/
   onboarding/     # Setup form, AI menu import, QR complete
   public/         # Public menu page, payment form
   ui/             # shadcn/ui components
+emails/
+  magic-link.tsx  # Magic link email template (react-email)
+  order-ready.tsx # Order-ready notification template
 lib/
   auth.ts         # Session management (create, get, delete, cookies)
   db.ts           # Prisma client singleton
@@ -82,6 +92,9 @@ lib/
 prisma/
   schema.prisma   # Standalone schema (User, Session, Location, Menu, Orders)
   seed.ts         # Idempotent demo data seeder
+docker-compose.yml    # App + PostgreSQL + MinIO + cron + Mailpit (mail profile)
+Dockerfile            # Multi-stage build (deps → build → runtime)
+docker-entrypoint.sh  # Startup: wait for db → migrate → seed → start
 ```
 
 ## Design System

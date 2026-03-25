@@ -14,16 +14,19 @@ Guests scan, order, kitchen prepares. Self-host in one command with Docker Compo
 - **Magic Link Auth** — Passwordless login via email, no passwords to manage
 - **AI Menu Import** — Upload a photo or paste a URL, AI extracts structured menu data (Google Gemini via Vercel AI SDK)
 - **Optional Prepayment** — Stripe integration for pay-before-pickup, or cash at the till
+- **Pickup Time Slots** — Guests choose a 15-minute pickup window; operators cap orders per slot to smooth kitchen load
+- **Analytics Dashboard** — Orders/day, revenue/day, popular items, peak hours — plus day-end reports with print and CSV export
+- **Order-Ready Notifications** — Optional email notification when an order is marked READY
 - **3-Step Onboarding** — Location setup, menu import, QR code — live in minutes
 - **Multi-Location** — One account, many locations
 
 ### For Guests
-- **Public Menu Page** — Each location gets a shareable URL (`/your-location`) showing the live menu
+- **Public Menu Page** — Each location gets a shareable URL (`/your-location`) showing the live menu with search, dietary filters, and allergen display
 - **QR Code Ordering** — Scan to view the menu and place orders, no app required
 - **No App Required** — Works in any mobile browser
 
 ### For Kitchens
-- **Kitchen Display** — Token-authenticated display at `/display/:token` for wall-mounted screens
+- **Kitchen Display** — Token-authenticated display at `/display/:token` for wall-mounted screens, shows requested pickup time
 - **Order Workflow** — Simple status progression from received to pickup
 
 ### Order Workflow
@@ -57,37 +60,67 @@ Guests scan, order, kitchen prepares. Self-host in one command with Docker Compo
 
 ### Docker (recommended)
 
+The fastest way to get FairOrder running — one command starts the app, database, and image storage:
+
 ```bash
 git clone https://github.com/RayNCooper/fairorder.git
 cd fairorder
 docker compose up
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Database is migrated and seeded automatically.
+Open [http://localhost:3000](http://localhost:3000). The database is automatically migrated and seeded with demo data.
 
-### Manual Setup
+**What starts:**
+
+| Service | Port | Description |
+|---------|------|-------------|
+| `app` | 3000 | Next.js app (auto-migrates and seeds on startup) |
+| `db` | 5432 | PostgreSQL 16 |
+| `minio` | 9000/9001 | S3-compatible image storage (API / Console) |
+| `cron` | — | Runs payment verification sweep every 2 minutes |
+
+**Optional: Email testing**
+
+To capture and inspect emails locally (magic links, order notifications), start with the `mail` profile:
+
+```bash
+docker compose --profile mail up
+```
+
+This adds [Mailpit](https://mailpit.axe.dev/) at [http://localhost:8025](http://localhost:8025) — all emails sent by the app appear there.
+
+### Local Setup (pnpm)
+
+Use this if you prefer running Node.js directly, want faster hot-reload, or need to work without Docker.
+
+**Prerequisites:** Node.js 22+, pnpm, PostgreSQL running locally
 
 ```bash
 git clone https://github.com/RayNCooper/fairorder.git
 cd fairorder
 pnpm install
-cp .env.example .env    # Edit DATABASE_URL
+cp .env.example .env        # Edit DATABASE_URL if your PostgreSQL differs
 pnpm db:generate
-pnpm db:migrate
-pnpm db:seed
+pnpm db:migrate:local       # Run database migrations
+pnpm db:seed                # Seed demo data (optional)
 pnpm dev:local
 ```
+
+All external services default to no-config development mode — no API keys needed. Emails log to the terminal, payments default to cash, and AI menu extraction returns mock data. See `.env.example` for the full list of configuration options.
 
 ### Available Scripts
 
 | Command | Description |
 |---------|-------------|
-| `pnpm dev` | Start dev server (dotenvx — maintainers) |
 | `pnpm dev:local` | Start dev server (plain .env — contributors) |
-| `pnpm build` | Production build |
-| `pnpm start` | Start production server |
+| `pnpm dev` | Start dev server (dotenvx — maintainers) |
+| `pnpm build:local` | Production build (plain .env) |
+| `pnpm start:local` | Start production server (plain .env) |
 | `pnpm lint` | Run ESLint |
 | `pnpm test` | Run Vitest test suite |
+| `pnpm db:generate` | Regenerate Prisma client |
+| `pnpm db:migrate:local` | Run database migrations (contributors) |
+| `pnpm db:seed` | Seed demo data (idempotent) |
 
 ---
 
@@ -109,6 +142,9 @@ fairorder/
 │   ├── display/          # Kitchen display components
 │   ├── onboarding/       # Setup form, AI menu import, QR display
 │   └── public/           # Public menu page, payment form
+├── emails/
+│   ├── magic-link.tsx    # Magic link email template (react-email)
+│   └── order-ready.tsx   # Order-ready notification template
 ├── lib/
 │   ├── auth.ts           # Session management
 │   ├── db.ts             # Prisma client
@@ -122,6 +158,7 @@ fairorder/
 ├── prisma/
 │   ├── schema.prisma     # Database schema
 │   └── seed.ts           # Demo data
+├── __tests__/            # Vitest test suite
 └── public/               # Static assets
 ```
 
@@ -193,7 +230,7 @@ Configure via `MENU_EXTRACTION_PROVIDER` environment variable:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines. This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 
