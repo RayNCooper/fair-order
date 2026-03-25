@@ -48,6 +48,7 @@ model Location {
 
   orderLeadTimeMinutes Int @default(10)
   maxActiveOrders      Int @default(50)
+  maxOrdersPerSlot     Int?
 
   adminToken   String @unique @default(cuid())
   displayToken String @unique @default(cuid())
@@ -133,6 +134,7 @@ model Order {
   orderNumber Int
   customerName String
   customerNote String?
+  customerEmail String?
 
   requestedPickupTime DateTime
   estimatedReadyTime  DateTime?
