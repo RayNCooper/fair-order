@@ -28,13 +28,7 @@ Open http://localhost:3000. The database is automatically migrated and seeded wi
 | `minio-setup` | — | One-shot init: creates the image bucket and sets public read |
 | `cron` | — | Runs `GET /api/cron/verify-payments` every 2 minutes |
 
-**Email testing:** To capture and inspect emails (magic links, order-ready notifications), add the `mail` profile:
-
-```bash
-docker compose --profile mail up
-```
-
-This starts [Mailpit](https://mailpit.axe.dev/) at http://localhost:8025 — every email the app sends appears there. The Docker config automatically sets `EMAIL_PROVIDER=smtp` and points SMTP at Mailpit.
+**Email testing:** [Mailpit](https://mailpit.axe.dev/) starts automatically at http://localhost:8025 — every email the app sends (magic links, order notifications) appears there. No extra flags needed.
 
 **Rebuilding after code changes:** Docker mounts nothing — it builds from the Dockerfile. After pulling new changes or modifying code:
 

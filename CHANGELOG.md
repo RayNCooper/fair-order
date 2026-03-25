@@ -2,6 +2,27 @@
 
 All notable changes to the FairOrder product app are documented in this file.
 
+## [0.5.0.1] - 2026-03-25
+
+### Fixed
+- `docker compose up` now works without setting `CRON_SECRET` — defaults to a dev value
+- Magic link emails now work out of the box in Docker — Mailpit always starts (no `--profile mail` needed)
+- Docker entrypoint no longer hangs — replaced `pg_isready` (missing in Alpine) with Node.js TCP check
+- Prisma CLI now works in Docker runtime — fixed pnpm symlink resolution for `@prisma/engines`
+- Database seed runs in Docker — added `tsx` as a dependency for TypeScript seed execution
+- Init migration now matches schema — added missing `maxOrdersPerSlot` and `customerEmail` columns
+
+### Added
+- `pnpm db:migrate:local` command for contributors (runs without dotenvx)
+- `tsx` as a dev dependency (needed for Docker seed and consistent local tooling)
+- `restart: unless-stopped` on the Docker app service for resilience
+- `prisma.config.ts` copied into Docker runtime image
+
+### Changed
+- Dockerfile copies full `node_modules` from deps stage (fixes pnpm symlink issues in runtime)
+- `prisma.config.ts` uses optional `dotenv/config` import (works in Docker where dotenv isn't hoisted)
+- README, CONTRIBUTING, and CLAUDE.md rewritten for contributor-friendly setup with Docker and pnpm paths
+
 ## [0.5.0.0] - 2026-03-25
 
 ### Added

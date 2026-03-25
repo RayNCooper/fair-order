@@ -77,17 +77,10 @@ Open [http://localhost:3000](http://localhost:3000). The database is automatical
 | `app` | 3000 | Next.js app (auto-migrates and seeds on startup) |
 | `db` | 5432 | PostgreSQL 16 |
 | `minio` | 9000/9001 | S3-compatible image storage (API / Console) |
+| `mailpit` | 8025 | Email UI — all emails (magic links, notifications) appear here |
 | `cron` | — | Runs payment verification sweep every 2 minutes |
 
-**Optional: Email testing**
-
-To capture and inspect emails locally (magic links, order notifications), start with the `mail` profile:
-
-```bash
-docker compose --profile mail up
-```
-
-This adds [Mailpit](https://mailpit.axe.dev/) at [http://localhost:8025](http://localhost:8025) — all emails sent by the app appear there.
+Open [http://localhost:8025](http://localhost:8025) to see captured emails (magic links for login, order notifications, etc.).
 
 ### Local Setup (pnpm)
 

@@ -26,13 +26,13 @@ pnpm start        # Start production server (dotenvx)
 pnpm start:local  # Start production server (plain .env)
 pnpm lint         # Run ESLint
 pnpm test         # Run Vitest test suite
-pnpm db:generate  # Regenerate Prisma client
-pnpm db:migrate   # Run migrations (dev)
-pnpm db:seed      # Seed demo data (idempotent)
+pnpm db:generate       # Regenerate Prisma client
+pnpm db:migrate        # Run migrations (dotenvx — maintainers)
+pnpm db:migrate:local  # Run migrations (plain .env — contributors)
+pnpm db:seed           # Seed demo data (idempotent)
 
 # ── Docker ──
-docker compose up              # Start app + db + minio + cron
-docker compose --profile mail up  # + Mailpit email testing (localhost:8025)
+docker compose up              # Start app + db + minio + mailpit + cron
 docker compose up --build      # Rebuild after code changes
 docker compose down -v         # Reset everything (deletes database + uploads)
 ```
@@ -92,7 +92,7 @@ lib/
 prisma/
   schema.prisma   # Standalone schema (User, Session, Location, Menu, Orders)
   seed.ts         # Idempotent demo data seeder
-docker-compose.yml    # App + PostgreSQL + MinIO + cron + Mailpit (mail profile)
+docker-compose.yml    # App + PostgreSQL + MinIO + Mailpit + cron
 Dockerfile            # Multi-stage build (deps → build → runtime)
 docker-entrypoint.sh  # Startup: wait for db → migrate → seed → start
 ```
