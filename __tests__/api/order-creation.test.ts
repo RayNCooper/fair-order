@@ -62,7 +62,7 @@ describe("POST /api/orders", () => {
     vi.mocked(db.location.findUnique).mockResolvedValue(validLocation as never)
     vi.mocked(db.menuItem.findMany).mockResolvedValue([validMenuItem] as never)
     const mockOrder = { id: "ord-1", orderNumber: 1, items: [] }
-    mockTransaction.mockImplementation(async (fn: Function) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
         order: {
           count: vi.fn().mockResolvedValue(0),
@@ -82,7 +82,7 @@ describe("POST /api/orders", () => {
   it("returns 400 for pickup time in the past", async () => {
     vi.mocked(db.location.findUnique).mockResolvedValue(validLocation as never)
     vi.mocked(db.menuItem.findMany).mockResolvedValue([validMenuItem] as never)
-    mockTransaction.mockImplementation(async (fn: Function) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
         order: {
           count: vi.fn().mockResolvedValue(0),
@@ -105,7 +105,7 @@ describe("POST /api/orders", () => {
   it("returns 400 for invalid pickup time format", async () => {
     vi.mocked(db.location.findUnique).mockResolvedValue(validLocation as never)
     vi.mocked(db.menuItem.findMany).mockResolvedValue([validMenuItem] as never)
-    mockTransaction.mockImplementation(async (fn: Function) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
         order: {
           count: vi.fn().mockResolvedValue(0),
@@ -128,7 +128,7 @@ describe("POST /api/orders", () => {
     vi.mocked(db.location.findUnique).mockResolvedValue(validLocation as never)
     vi.mocked(db.menuItem.findMany).mockResolvedValue([validMenuItem] as never)
     const mockOrder = { id: "ord-1", orderNumber: 1, items: [] }
-    mockTransaction.mockImplementation(async (fn: Function) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
         order: {
           count: vi.fn().mockResolvedValue(0),
@@ -150,7 +150,7 @@ describe("POST /api/orders", () => {
     const locationWithSlotLimit = { ...validLocation, maxOrdersPerSlot: 2 }
     vi.mocked(db.location.findUnique).mockResolvedValue(locationWithSlotLimit as never)
     vi.mocked(db.menuItem.findMany).mockResolvedValue([validMenuItem] as never)
-    mockTransaction.mockImplementation(async (fn: Function) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
         order: {
           count: vi.fn().mockResolvedValue(2), // slot is full
@@ -175,7 +175,7 @@ describe("POST /api/orders", () => {
     vi.mocked(db.menuItem.findMany).mockResolvedValue([validMenuItem] as never)
     let capturedData: Record<string, unknown> = {}
     const mockOrder = { id: "ord-1", orderNumber: 1, items: [] }
-    mockTransaction.mockImplementation(async (fn: Function) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
         order: {
           count: vi.fn().mockResolvedValue(0),
