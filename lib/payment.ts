@@ -121,6 +121,22 @@ async function verifyStripePayment(
   }
 }
 
+/** Retrieve an existing Stripe PaymentIntent by ID. Returns client_secret or null. */
+export async function retrieveStripePaymentIntent(
+  paymentIntentId: string
+): Promise<{ clientSecret: string; transactionId: string } | null> {
+  try {
+    const stripe = await getStripeClient();
+    const existing = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (existing.client_secret) {
+      return { clientSecret: existing.client_secret, transactionId: existing.id };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ── PayPal provider ──
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

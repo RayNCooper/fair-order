@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
   createPaymentIntent,
+  retrieveStripePaymentIntent,
   isStripeEnabled,
   isPayPalEnabled,
   type PaymentMethod,
@@ -27,8 +28,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine payment method — explicit param or default to "stripe" for backward compat
-    const paymentMethod: PaymentMethod =
-      method === "paypal" ? "paypal" : "stripe";
+    const validMethods: PaymentMethod[] = ["stripe", "paypal"];
+    if (method && !validMethods.includes(method)) {
+      return NextResponse.json(
+        { error: "Ungültige Zahlungsart." },
+        { status: 400 }
+      );
+    }
+    const paymentMethod: PaymentMethod = method === "paypal" ? "paypal" : "stripe";
 
     // Verify location exists and has the requested payment method enabled
     const location = await db.location.findUnique({
@@ -103,20 +110,9 @@ export async function POST(request: NextRequest) {
     // Idempotency: if a payment intent already exists, try to retrieve it
     if (order.paymentIntentId && order.paymentStatus === "pending") {
       if (order.paymentMethod === "stripe") {
-        try {
-          const { default: Stripe } = await import("stripe");
-          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-          const existing = await stripe.paymentIntents.retrieve(
-            order.paymentIntentId
-          );
-          if (existing.client_secret) {
-            return NextResponse.json({
-              clientSecret: existing.client_secret,
-              transactionId: existing.id,
-            });
-          }
-        } catch {
-          // Retrieval failed — fall through to create a new one
+        const existing = await retrieveStripePaymentIntent(order.paymentIntentId);
+        if (existing) {
+          return NextResponse.json(existing);
         }
       } else if (order.paymentMethod === "paypal") {
         // For PayPal, the order ID is still valid — return it

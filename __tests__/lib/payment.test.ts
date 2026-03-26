@@ -327,12 +327,14 @@ describe("payment — unknown method param", () => {
         currency: "eur",
         orderId: "x",
         customerName: "x",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }, "bitcoin" as any)
     ).rejects.toThrow("Unknown payment method")
   })
 
   it("verifyPayment returns 'failed' for unknown method", async () => {
     const { verifyPayment } = await import("@/lib/payment")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(await verifyPayment("txn_123", "bitcoin" as any)).toBe("failed")
   })
 })
