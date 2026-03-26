@@ -2,6 +2,15 @@
 
 All notable changes to the FairOrder product app are documented in this file.
 
+## [0.5.3.0] - 2026-03-27
+
+### Added
+- MwSt tax rate tracking on menu items — 7% for food (default), 19% for beverages
+- Tax rate selector (7%/19% toggle) in dashboard menu item editor
+- Tax breakdown in analytics API — net revenue and tax amount per rate
+- AI menu extraction auto-classifies items as food (7%) or beverage (19%)
+- OrderItem stores baked-in tax rate at order creation time for audit trail
+
 ## [0.5.2.0] - 2026-03-27
 
 ### Added
