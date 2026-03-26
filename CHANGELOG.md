@@ -2,7 +2,7 @@
 
 All notable changes to the FairOrder product app are documented in this file.
 
-## [0.5.2.0] - 2026-03-27
+## [0.5.4.0] - 2026-03-27
 
 ### Added
 - PayPal payment support — operators can now accept PayPal alongside card payments and cash
@@ -18,11 +18,41 @@ All notable changes to the FairOrder product app are documented in this file.
 ### Changed
 - Payment providers now auto-detected from API keys — `PAYMENT_PROVIDER` env var deprecated (still honored as fallback)
 - `createPaymentIntent()` and `verifyPayment()` accept optional `method` parameter for caller-driven routing
-- `PaymentResult` type updated to discriminated union (Stripe returns `clientSecret`, PayPal returns `paypalOrderId`)
 - `PaymentMethodSelector` refactored with `PaymentOptionButton` component, supports 3 methods (cash/stripe/paypal)
 - Stripe PaymentIntent creation now includes `automatic_payment_methods: { enabled: true }` for broader payment method support
 - Cron sweep now selects `paymentMethod` from orders and passes it to `verifyPayment()` for correct provider routing
 - `isStripeEnabled()` simplified — checks `STRIPE_SECRET_KEY` directly instead of `PAYMENT_PROVIDER` env var
+
+## [0.5.3.0] - 2026-03-27
+
+### Added
+- MwSt tax rate tracking on menu items — 7% for food (default), 19% for beverages
+- Tax rate selector (7%/19% toggle) in dashboard menu item editor
+- Tax breakdown in analytics API — net revenue and tax amount per rate
+- AI menu extraction auto-classifies items as food (7%) or beverage (19%)
+- OrderItem stores baked-in tax rate at order creation time for audit trail
+
+## [0.5.2.0] - 2026-03-27
+
+### Added
+- Live order tracking page at `/order/[token]` — serves as both receipt and real-time status tracker
+- Unique 12-char crypto token per order for shareable, bookmarkable order URLs
+- Order confirmation email with itemized receipt and tracking link (sent on order creation)
+- Order-ready email now includes a link to the order tracking page
+- Skeleton loading state for order page (prevents blank screen after redirect)
+- Friendly 404 page for invalid order tokens
+- "Nochmal bestellen" (re-order) button on completed orders
+- Contact message + menu link on cancelled orders
+- SWR-powered live status polling (10s interval, stops on terminal states)
+- PII filtering on public order API — customerEmail, customerNote, paymentIntentId excluded
+- `robots: noindex` on order pages to prevent search indexing
+- 9 new tests covering order token lookup, PII filtering, and email templates (166 → 175 total)
+
+### Changed
+- Guest checkout now redirects to `/order/[token]` instead of showing inline success screen
+- `router.replace` used for redirect (back button doesn't return to stale checkout)
+- Order creation API returns filtered response (excludes PII fields)
+- Stripe payment success uses `useRef` backup for token to prevent race condition
 
 ## [0.5.1.0] - 2026-03-26
 
