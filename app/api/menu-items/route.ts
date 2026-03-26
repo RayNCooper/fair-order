@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
         name: body.name.trim(),
         description: body.description?.trim() || null,
         price: Number(body.price),
+        vatRate: [0, 7, 19].includes(Number(body.vatRate)) ? Number(body.vatRate) : 7,
         imageUrl: body.imageUrl?.trim() || null,
         categoryId: body.categoryId || null,
         locationId: location.id,

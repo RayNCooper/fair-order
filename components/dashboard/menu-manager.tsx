@@ -51,6 +51,7 @@ interface MenuItem {
   name: string;
   description: string | null;
   price: string | number;
+  vatRate?: string | number;
   imageUrl: string | null;
   categoryId: string | null;
   isAvailable: boolean;
@@ -197,6 +198,7 @@ export function MenuManager({ initialCategories, uncategorizedItems: initialUnca
     name: "",
     description: "",
     price: "",
+    vatRate: "7",
     imageUrl: "",
     categoryId: "",
     isAvailable: true,
@@ -309,6 +311,7 @@ export function MenuManager({ initialCategories, uncategorizedItems: initialUnca
       name: "",
       description: "",
       price: "",
+      vatRate: "7",
       imageUrl: "",
       categoryId: categoryId || "",
       isAvailable: true,
@@ -325,6 +328,7 @@ export function MenuManager({ initialCategories, uncategorizedItems: initialUnca
       name: item.name,
       description: item.description || "",
       price: formatPrice(item.price),
+      vatRate: String(item.vatRate ?? "7"),
       imageUrl: item.imageUrl || "",
       categoryId: item.categoryId || "",
       isAvailable: item.isAvailable,
@@ -356,6 +360,7 @@ export function MenuManager({ initialCategories, uncategorizedItems: initialUnca
         name: itemForm.name.trim(),
         description: itemForm.description.trim() || null,
         price: priceNum,
+        vatRate: parseFloat(itemForm.vatRate) || 7,
         imageUrl: itemForm.imageUrl.trim() || null,
         categoryId: itemForm.categoryId || null,
         isAvailable: itemForm.isAvailable,
@@ -1075,7 +1080,7 @@ export function MenuManager({ initialCategories, uncategorizedItems: initialUnca
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="item-price">Preis (EUR) *</Label>
                 <Input
@@ -1088,6 +1093,25 @@ export function MenuManager({ initialCategories, uncategorizedItems: initialUnca
                   placeholder="0,00"
                   inputMode="decimal"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="item-vat">MwSt.</Label>
+                <Select
+                  value={itemForm.vatRate}
+                  onValueChange={(value) =>
+                    setItemForm((f) => ({ ...f, vatRate: value }))
+                  }
+                >
+                  <SelectTrigger className="rounded-none w-full font-mono" id="item-vat">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    <SelectItem value="7">7%</SelectItem>
+                    <SelectItem value="19">19%</SelectItem>
+                    <SelectItem value="0">0%</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

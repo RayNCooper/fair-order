@@ -61,6 +61,17 @@ export async function PUT(
       data.price = Number(body.price);
     }
 
+    if (body.vatRate !== undefined) {
+      const rate = Number(body.vatRate);
+      if (![0, 7, 19].includes(rate)) {
+        return NextResponse.json(
+          { error: "MwSt.-Satz muss 0, 7 oder 19 sein." },
+          { status: 400 }
+        );
+      }
+      data.vatRate = rate;
+    }
+
     if (body.categoryId !== undefined) {
       // Verify new category belongs to the same location
       if (body.categoryId) {
