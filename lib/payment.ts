@@ -6,14 +6,13 @@
 
 export type PaymentMethod = "cash" | "stripe" | "paypal";
 
-type PaymentResultSuccess =
-  | { success: true; transactionId: string; clientSecret: string; paypalOrderId?: undefined }
-  | { success: true; transactionId: string; paypalOrderId: string; clientSecret?: undefined }
-  | { success: true; transactionId: string; clientSecret?: undefined; paypalOrderId?: undefined };
-
-type PaymentResultError = { success: false; error: string };
-
-export type PaymentResult = PaymentResultSuccess | PaymentResultError;
+export interface PaymentResult {
+  success: boolean;
+  transactionId?: string;
+  clientSecret?: string;
+  paypalOrderId?: string;
+  error?: string;
+}
 
 export interface CreatePaymentIntentOptions {
   amount: number; // cents
